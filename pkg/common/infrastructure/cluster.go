@@ -13,13 +13,13 @@
 package infrastructure
 
 import (
+	"fmt"
 	"os"
 	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -33,6 +33,7 @@ const (
 	LeasesResources                = "leases"
 	OAuthClientsResources          = "oauthclients"
 	KubernetesImagePullerResources = "kubernetesimagepullers"
+	ServiceMonitorResources        = "servicemonitors"
 )
 
 var (
@@ -41,18 +42,30 @@ var (
 	isOpenShiftOAuthEnabled        bool
 	isLeaderElectionEnabled        bool
 	isKubernetesImagePullerEnabled bool
+	isServiceMonitorEnabled        bool
 
-	logger = ctrl.Log.WithName("infrastructure")
+	operatorNamespace string
 )
 
 func GetOperatorNamespace() (string, error) {
-	nsBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	if err != nil {
-		return "", err
+	if operatorNamespace == "" {
+		nsBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		if err == nil {
+			operatorNamespace = strings.TrimSpace(string(nsBytes))
+			return operatorNamespace, nil
+		}
+
+		// for the purpose of local run
+		namespace, ok := os.LookupEnv("WATCH_NAMESPACE")
+		if ok {
+			operatorNamespace = namespace
+			return operatorNamespace, nil
+		}
+
+		return "", fmt.Errorf("operator namespace is not set")
 	}
 
-	ns := strings.TrimSpace(string(nsBytes))
-	return ns, nil
+	return operatorNamespace, nil
 }
 
 func IsOpenShift() bool {
@@ -65,6 +78,11 @@ func IsOpenShiftOAuthEnabled() bool {
 	return isOpenShiftOAuthEnabled
 }
 
+func IsOpenShiftExternalAuth() bool {
+	initializeIfNeeded()
+	return IsOpenShift() && !IsOpenShiftOAuthEnabled()
+}
+
 func IsLeaderElectionEnabled() bool {
 	initializeIfNeeded()
 	return isLeaderElectionEnabled
@@ -75,17 +93,29 @@ func IsKubernetesImagePullerEnabled() bool {
 	return isKubernetesImagePullerEnabled
 }
 
+func IsServiceMonitorEnabled() bool {
+	initializeIfNeeded()
+	return isServiceMonitorEnabled
+}
+
+func SetOpenShiftOAuthEnabledForTesting(enabled bool) {
+	isOpenShiftOAuthEnabled = enabled
+}
+
 func InitializeForTesting(desiredInfrastructure Type) {
 	infrastructure = desiredInfrastructure
 
 	if IsOpenShift() {
 		isOpenShiftOAuthEnabled = true
+		operatorNamespace = "openshift-operators"
 	} else {
 		isOpenShiftOAuthEnabled = false
+		operatorNamespace = "eclipse-che"
 	}
 
 	isKubernetesImagePullerEnabled = true
 	isLeaderElectionEnabled = true
+	isServiceMonitorEnabled = true
 }
 
 func initializeIfNeeded() {
@@ -118,6 +148,7 @@ func initializeIfNeeded() {
 
 	isLeaderElectionEnabled = hasAPIResource(apiResources, LeasesResources)
 	isKubernetesImagePullerEnabled = hasAPIResource(apiResources, KubernetesImagePullerResources)
+	isServiceMonitorEnabled = hasAPIResource(apiResources, ServiceMonitorResources)
 }
 
 func hasAPIGroup(source []*metav1.APIGroup, apiName string) bool {

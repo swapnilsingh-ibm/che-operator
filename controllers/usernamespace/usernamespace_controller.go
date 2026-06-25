@@ -22,9 +22,9 @@ import (
 	"github.com/eclipse-che/che-operator/pkg/common/diffs"
 	k8sclient "github.com/eclipse-che/che-operator/pkg/common/k8s-client"
 	containercapabilties "github.com/eclipse-che/che-operator/pkg/deploy/container-capabilities"
+	"k8s.io/utils/ptr"
 
 	"github.com/eclipse-che/che-operator/controllers/namespacecache"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -105,7 +105,8 @@ func (r *CheUserNamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Use controller.TypedOptions to allow to configure 2 controllers for same object being reconciled
 	return bld.WithOptions(
 		controller.TypedOptions[reconcile.Request]{
-			SkipNameValidation: pointer.Bool(true),
+			SkipNameValidation: ptr.To(true),
+			UsePriorityQueue:   ptr.To(false),
 		}).Complete(r)
 }
 
@@ -433,7 +434,7 @@ func (r *CheUserNamespaceReconciler) reconcileUserSettings(
 		Data: data,
 	}
 
-	_, err := deploy.Sync(deployContext, cm, diffs.ConfigMapAllLabels)
+	_, err := deploy.Sync(deployContext, cm, diffs.ConfigMapEnsureLabels)
 	return err
 }
 
@@ -487,7 +488,7 @@ func (r *CheUserNamespaceReconciler) reconcileGitTlsCertificate(ctx context.Cont
 		target.Data["host"] = gitCert.Data[constants.GitSelfSignedCertsConfigMapGitHostKey]
 	}
 
-	_, err := deploy.Sync(deployContext, &target, diffs.ConfigMapAllLabels)
+	_, err := deploy.Sync(deployContext, &target, diffs.ConfigMapEnsureLabels)
 	return err
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019-2025 Red Hat, Inc.
+// Copyright (c) 2019-2026 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -14,6 +14,7 @@ package test_client
 
 import (
 	projectv1 "github.com/openshift/api/project/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -57,7 +58,7 @@ func GetTestClients(initObjs ...client.Object) (client.Client, *fakeDiscovery.Fa
 
 	clientSet := fakeclientset.NewClientset()
 	discoveryClient, _ := clientSet.Discovery().(*fakeDiscovery.FakeDiscovery)
-	discoveryClient.Fake.Resources = []*metav1.APIResourceList{
+	discoveryClient.Resources = []*metav1.APIResourceList{
 		{
 			APIResources: []metav1.APIResource{
 				{Name: "consolelinks"},
@@ -71,6 +72,14 @@ func GetTestClients(initObjs ...client.Object) (client.Client, *fakeDiscovery.Fa
 				},
 			},
 		},
+		{
+			GroupVersion: "monitoring.coreos.com/v1",
+			APIResources: []metav1.APIResource{
+				{
+					Name: "servicemonitors",
+				},
+			},
+		},
 	}
 
 	return fakeClient, discoveryClient, scheme
@@ -81,7 +90,7 @@ func getScheme() *runtime.Scheme {
 	scheme.AddKnownTypes(controllerv1alpha1.GroupVersion, &controllerv1alpha1.DevWorkspaceOperatorConfig{}, &controllerv1alpha1.DevWorkspaceOperatorConfigList{})
 	scheme.AddKnownTypes(controllerv1alpha1.GroupVersion, &controllerv1alpha1.DevWorkspaceRouting{}, &controllerv1alpha1.DevWorkspaceRoutingList{})
 	scheme.AddKnownTypes(oauthv1.GroupVersion, &oauthv1.OAuthClient{}, &oauthv1.OAuthClientList{})
-	scheme.AddKnownTypes(configv1.GroupVersion, &configv1.Proxy{}, &configv1.Console{})
+	scheme.AddKnownTypes(configv1.GroupVersion, &configv1.Proxy{}, &configv1.Console{}, &configv1.Authentication{}, &configv1.AuthenticationList{})
 	scheme.AddKnownTypes(templatev1.GroupVersion, &templatev1.Template{}, &templatev1.TemplateList{})
 	scheme.AddKnownTypes(routev1.GroupVersion, &routev1.Route{}, &routev1.RouteList{})
 	scheme.AddKnownTypes(corev1.SchemeGroupVersion, &corev1.Secret{}, &corev1.SecretList{})
@@ -103,7 +112,8 @@ func getScheme() *runtime.Scheme {
 	scheme.AddKnownTypes(chev2.GroupVersion, &chev2.CheCluster{}, &chev2.CheClusterList{})
 	scheme.AddKnownTypes(networkingv1.SchemeGroupVersion, &networkingv1.Ingress{}, &networkingv1.IngressList{})
 	scheme.AddKnownTypes(batchv1.SchemeGroupVersion, &batchv1.Job{}, &batchv1.JobList{})
-	scheme.AddKnownTypes(projectv1.SchemeGroupVersion, &projectv1.Project{}, &projectv1.ProjectList{})
+	scheme.AddKnownTypes(projectv1.GroupVersion, &projectv1.Project{}, &projectv1.ProjectList{})
+	scheme.AddKnownTypes(monitoringv1.SchemeGroupVersion, &monitoringv1.ServiceMonitor{}, &monitoringv1.ServiceMonitorList{})
 
 	return scheme
 }

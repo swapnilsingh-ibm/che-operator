@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019-2023 Red Hat, Inc.
+// Copyright (c) 2019-2026 Red Hat, Inc.
 // This program and the accompanying materials are made
 // available under the terms of the Eclipse Public License 2.0
 // which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/eclipse-che/che-operator/pkg/common/infrastructure"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -615,11 +615,11 @@ type Auth struct {
 	// For OpenShift with built-in OAuth, this is the name of the `OAuthClient` resource used to set up identity federation.
 	// +optional
 	OAuthClientName string `json:"oAuthClientName,omitempty"`
-	// Defines the OAuth client secret.
-	// It can either be a plain text secret value or the name of a Kubernetes secret
-	// containing a key `oAuthSecret` with the secret value. The Kubernetes secret must exist in the same namespace
-	// as the `CheCluster` resource and have the label `app.kubernetes.io/part-of=che.eclipse.org`.
-	// For OpenShift with built-in OAuth, this is the secret set in the `OAuthClient` resource used to set up identity federation.
+	// For OIDC, this is the client secret issued by the Identity Provider for the configured OIDC client.
+	// For OpenShift with built-in OAuth, this is the secret configured in the OAuthClient for OpenShift OAuth integration.
+	// The value can either be a plain text secret value (deprecated) or the name of a Kubernetes secret
+	// that contains the secret value under the `oAuthSecret` key. The Kubernetes secret must exist in the same namespace
+	// as the `CheCluster` resource namespace and must have a `app.kubernetes.io/part-of=che.eclipse.org` label.
 	// +optional
 	OAuthSecret string `json:"oAuthSecret,omitempty"`
 	// Defines the scope requested from the OIDC provider.
@@ -1138,7 +1138,7 @@ func (c *CheCluster) IsAccessTokenConfigured() bool {
 }
 
 func (c *CheCluster) IsContainerRunCapabilitiesEnabled() bool {
-	return !pointer.BoolDeref(c.Spec.DevEnvironments.DisableContainerRunCapabilities, constants.DefaultDisableContainerRunCapabilities)
+	return !ptr.Deref(c.Spec.DevEnvironments.DisableContainerRunCapabilities, constants.DefaultDisableContainerRunCapabilities)
 }
 
 // IsContainerBuildCapabilitiesEnabled returns true if container build capabilities are enabled.

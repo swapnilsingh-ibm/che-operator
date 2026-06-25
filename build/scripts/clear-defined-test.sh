@@ -105,9 +105,6 @@ declare -A replaced_paths=(
   ["go.starlark.net"]="github.com/google/starlark-go"
   ["gotest.tools"]="github.com/gotestyourself/gotest.tools"
   ["gioui.org"]="github.com/gioui/gio"
-  # ["go.podman.io/common"]="github.com/containers/container-libs"
-  # ["go.podman.io/image/v5"]="github.com/containers/container-libs"
-  # ["go.podman.io/storage"]="github.com/containers/container-libs"
 )
 
 # replaces to have a correct link for clearlydefined.io api request
@@ -140,17 +137,15 @@ declare -A ignored_paths=(
   ["go.podman.io/storage"]="Harvesting is in progress"
   ["golang.org/x/tools/go/packages/packagestest"]="Harvesting is in progress"
   ["google.golang.org/genproto"]="Harvesting is in progress"
-  ["k8s.io/api"]="Harvesting is in progress"
   ["k8s.io/apiextensions-apiserver"]="Harvesting is in progress"
-  ["k8s.io/apimachinery"]="Harvesting is in progress"
   ["k8s.io/apiserver"]="Harvesting is in progress"
-  ["k8s.io/client-go"]="Harvesting is in progress"
   ["k8s.io/code-generator"]="Harvesting is in progress"
   ["k8s.io/component-base"]="Harvesting is in progress"
   ["k8s.io/kms"]="Harvesting is in progress"
   ["k8s.io/kube-aggregator"]="Harvesting is in progress"
-  ["k8s.io/utils"]="Harvesting is in progress"
+  ["k8s.io/kube-openapi"]="Harvesting is in progress"
   ["sigs.k8s.io/controller-tools"]="Harvesting is in progress"
+  ["github.com/prometheus-operator/prometheus-operator"]="Harvesting is in progress"
 )
 
 declare -A ignored_paths_licenses=(
@@ -190,16 +185,10 @@ declare -A ignored_paths_licenses=(
   ["golang.org/x/tools/go/packages/packagestest"]="BSD-3-Clause"
   # https://github.com/googleapis/go-genproto?tab=Apache-2.0-1-ov-file
   ["google.golang.org/genproto"]="Apache-2.0"
-  # https://github.com/kubernetes/api?tab=Apache-2.0-1-ov-file
-  ["k8s.io/api"]="Apache-2.0"
   # https://github.com/kubernetes/apiextensions-apiserver?tab=Apache-2.0-1-ov-file
   ["k8s.io/apiextensions-apiserver"]="Apache-2.0"
-  # https://github.com/kubernetes/apimachinery?tab=Apache-2.0-1-ov-file
-  ["k8s.io/apimachinery"]="Apache-2.0"
   # https://github.com/kubernetes/apiserver?tab=Apache-2.0-1-ov-file
   ["k8s.io/apiserver"]="Apache-2.0"
-  # https://github.com/kubernetes/client-go?tab=Apache-2.0-1-ov-file
-  ["k8s.io/client-go"]="Apache-2.0"
   # https://github.com/kubernetes/code-generator?tab=Apache-2.0-1-ov-file
   ["k8s.io/code-generator"]="Apache-2.0"
   # https://github.com/kubernetes/component-base?tab=Apache-2.0-1-ov-file
@@ -208,10 +197,12 @@ declare -A ignored_paths_licenses=(
   ["k8s.io/kms"]="Apache-2.0"
   # https://github.com/kubernetes/kube-aggregator?tab=Apache-2.0-1-ov-file
   ["k8s.io/kube-aggregator"]="Apache-2.0"
-  # https://github.com/kubernetes/utils?tab=Apache-2.0-1-ov-file
-  ["k8s.io/utils"]="Apache-2.0"
+  # https://github.com/kubernetes/kube-openapi?tab=Apache-2.0-1-ov-file
+  ["k8s.io/kube-openapi"]="Apache-2.0"
   # https://github.com/kubernetes-sigs/controller-tools?tab=Apache-2.0-1-ov-file
   ["sigs.k8s.io/controller-tools"]="Apache-2.0"
+  # https://github.com/prometheus-operator/prometheus-operator?tab=Apache-2.0-1-ov-file
+  ["github.com/prometheus-operator/prometheus-operator"]="Apache-2.0"
 )
 
 declare -A declared_licenses=(
@@ -223,7 +214,7 @@ retryUrl() {
     url=$1
 
     body=""
-    max_retries=5
+    max_retries=1
     for ((i=1; i<=max_retries; i++)); do
       response=$(curl -s -w "HTTPSTATUS:%{http_code}" "$url")
       body=$(echo "$response" | sed -e 's/HTTPSTATUS\:.*//g')
@@ -243,6 +234,11 @@ go list -m -mod=mod all | while read -r module; do
     if [[ "$module" == "github.com/eclipse-che/che-operator" ]]; then
         continue
     fi
+
+    if [[ ! "$module" =~ "k8s.io" ]]; then
+        continue
+    fi
+
 
     # respect the replace directive in go.mod file
     if [[ "${module}" == *"=>"* ]]; then

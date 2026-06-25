@@ -18,6 +18,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	securityv1 "github.com/openshift/api/security/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +44,7 @@ var SecurityContextConstraints = cmp.Options{
 	cmpopts.IgnoreFields(securityv1.SecurityContextConstraints{}, "TypeMeta", "ObjectMeta", "Priority"),
 }
 
-var ConfigMapAllLabels = cmp.Options{
+var ConfigMapEnsureLabels = cmp.Options{
 	cmpopts.IgnoreFields(corev1.ConfigMap{}, "TypeMeta"),
 	cmp.Comparer(func(x, y metav1.ObjectMeta) bool {
 		return maps.Equal(x.Labels, y.Labels)
@@ -57,21 +58,21 @@ func ConfigMap(labels []string, annotations []string) cmp.Options {
 	}
 }
 
+var ServiceMonitor = cmp.Options{
+	cmpopts.IgnoreFields(monitoringv1.ServiceMonitor{}, "TypeMeta", "ObjectMeta"),
+}
+
 func objectMetaComparator(labels []string, annotations []string) cmp.Option {
 	return cmp.Comparer(func(x, y metav1.ObjectMeta) bool {
-		if labels != nil {
-			for _, label := range labels {
-				if x.Labels[label] != y.Labels[label] {
-					return false
-				}
+		for _, label := range labels {
+			if x.Labels[label] != y.Labels[label] {
+				return false
 			}
 		}
 
-		if annotations != nil {
-			for _, annotation := range annotations {
-				if x.Annotations[annotation] != y.Annotations[annotation] {
-					return false
-				}
+		for _, annotation := range annotations {
+			if x.Annotations[annotation] != y.Annotations[annotation] {
+				return false
 			}
 		}
 

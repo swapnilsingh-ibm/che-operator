@@ -13,6 +13,8 @@
 package identityprovider
 
 import (
+	"time"
+
 	"github.com/eclipse-che/che-operator/pkg/common/reconciler"
 	"github.com/eclipse-che/che-operator/pkg/common/utils"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,7 +45,11 @@ func NewIdentityProviderReconciler() *IdentityProviderReconciler {
 
 func (ip *IdentityProviderReconciler) Reconcile(ctx *chetypes.DeployContext) (reconcile.Result, bool, error) {
 	done, err := syncOAuthClient(ctx)
-	return reconcile.Result{Requeue: !done}, done, err
+	if !done || err != nil {
+		return reconcile.Result{RequeueAfter: time.Second}, false, err
+	}
+
+	return reconcile.Result{}, true, nil
 }
 
 func (ip *IdentityProviderReconciler) Finalize(ctx *chetypes.DeployContext) bool {
@@ -74,10 +80,10 @@ func syncOAuthClient(ctx *chetypes.DeployContext) (bool, error) {
 
 	if oauthClient != nil {
 		oauthClientName = oauthClient.Name
-		oauthSecret = utils.GetValue(ctx.CheCluster.Spec.Networking.Auth.OAuthSecret, oauthClient.Secret)
+		oauthSecret = utils.GetValue(string(ctx.Authentication.ClientSecret), oauthClient.Secret)
 	} else {
 		oauthClientName = GetOAuthClientName(ctx)
-		oauthSecret = utils.GetValue(ctx.CheCluster.Spec.Networking.Auth.OAuthSecret, utils.GeneratePassword(12))
+		oauthSecret = utils.GetValue(string(ctx.Authentication.ClientSecret), utils.GeneratePassword(12))
 	}
 
 	redirectURIs := []string{"https://" + ctx.CheHost + "/oauth/callback"}
