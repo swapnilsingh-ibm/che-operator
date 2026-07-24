@@ -787,6 +787,16 @@ spec:
                 - authentications
               verbs:
                 - get
+            # Used to resolve the architecture-native oauth-proxy image from the OpenShift
+            # release payload (equivalent to: oc adm release info --image-for=oauth-proxy).
+            - apiGroups:
+                - config.openshift.io
+              resourceNames:
+                - version
+              resources:
+                - clusterversions
+              verbs:
+                - get
             - apiGroups:
                 - ""
               resources:

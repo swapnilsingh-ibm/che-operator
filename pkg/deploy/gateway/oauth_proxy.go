@@ -184,7 +184,10 @@ func getOauthProxyContainerSpec(ctx *chetypes.DeployContext) corev1.Container {
 	var image, probePath string
 	var args = []string{"--config=/etc/oauth-proxy/oauth-proxy.cfg"}
 	if infrastructure.IsOpenShiftOAuthEnabled() {
-		image = defaults.GetGatewayOpenShiftAuthenticationSidecarImage(ctx.CheCluster)
+		// Prefer architecture-native oauth-proxy from the OpenShift release payload;
+		// fall back to RELATED_IMAGE_*. CheCluster container overrides still win later.
+		// See https://github.com/eclipse-che/che/issues/23895
+		image = getOpenShiftOAuthProxyImage(ctx)
 		probePath = "/oauth/healthz"
 	} else {
 		image = defaults.GetGatewayKubernetesAuthenticationSidecarImage(ctx.CheCluster)
